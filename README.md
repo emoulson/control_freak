@@ -21,9 +21,9 @@ It can currently only be used for text files (passing non-text files gives unexp
 
 ## What gets removed?
 ASCII characters 0-31 and 127 (aka "Control Characters"), except:
-- `9` (horizontal tab, `\t`) |
-- `10` (line feed, `\n`) |
-- `13` (carriage return, `\r`) |
+- `9` (horizontal tab, `\t`)
+- `10` (line feed, `\n`)
+- `13` (carriage return, `\r`)
 
 ## Sample
 ```
