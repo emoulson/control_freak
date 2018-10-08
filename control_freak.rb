@@ -4,7 +4,7 @@ require 'pry'
 # encoding: utf-8
 
 class OptParse
-  Version = '0.1'
+  Version = '0.2'
 
   class Options
     # Create options
@@ -30,8 +30,9 @@ class OptParse
       inplace_mode_option(parser)
       dry_run_mode_option(parser)
 
-      parser.on("-h", "--help", "This script removes control characters from files") do
+      parser.on("-h", "--help", "Show this help text") do
         puts parser
+        exit
       end
 
       parser.on("-v", "--version", "Show version") do
@@ -47,13 +48,13 @@ class OptParse
     end
 
     def input_file_option(parser)
-      parser.on("-f", "--file INPUT", "The full or relative path of the file to operate on") do |file|
+      parser.on("-f", "--file INPUT", String, "The full or relative path of the input file") do |file|
         self.input = file
       end
     end
 
     def output_file_option(parser)
-      parser.on("-o", "--output OUTPUT", "The full or relative path of the output file") do |out|
+      parser.on("-o", "--output OUTPUT", String, "The full or relative path of the output file") do |out|
         self.output = out
       end
     end
@@ -79,8 +80,8 @@ class OptParse
       parser.parse!(args)
     end
     @options
-  rescue OptionParser::MissingArgument
-    puts "Error: You're missing an argument!"
+  rescue OptionParser::MissingArgument => e
+    puts e.message
     exit
   end
 
@@ -99,18 +100,10 @@ class Cleaner
     self.clean_file = nil
   end
 
-  def input_file
-    if @dryrun || @output
-      File.open("#{@input}", "r:utf-8")
-    elsif @inplace
-      File.open("#{@input}", "r+:utf-8")
-    end
-  end
-
   def strip_control_characters
     str = ''
     # Iterates through lines of the input file
-    input_file.each_line.with_index(1) do |line, line_index|
+    File.open("#{@input}", "rt:utf-8").each.with_index(1) do |line, line_index|
       # Finds escaped Unicode codepoints and interprets them as a single character
       line = line.gsub(/\\u([0-9A-F]{4})/i){$1.hex.chr(Encoding::UTF_8)}
       # Iterates through characters
@@ -131,11 +124,11 @@ class Cleaner
   end
 
   def write_to_new_file
-    File.open(@output, "w"){ |f| f.write(strip_control_characters) }
+    File.open(@output, "wt:utf-8"){ |f| f.write(strip_control_characters) }
   end
 
   def write_in_place
-    File.open(@input, "r+"){ |f| f.write(strip_control_characters) }
+    File.open(@input, "w+t:utf-8"){ |f| f.write(strip_control_characters) }
   end
 
   def write_to_dry_run
@@ -149,27 +142,26 @@ options = op.parse(ARGV)
 clean = Cleaner.new(options)
 
 # Exits if no input file given
-if options.input.nil? && (options.output || options.inplace || options.dryrun || options.quiet)
-  puts "Please include an input file (-f, --file)"
+if options.input.nil?# && (options.output || options.inplace || options.dryrun || options.quiet)
+  raise "Please include an input file (-f, --file)"
   exit
 # Exits if no output option given
 elsif options.output.nil? && options.inplace.nil? && options.dryrun.nil? && options.input
-  puts "You must include one of the following options: output file (-o), in-place (-i), dry run (-d)"
+  raise "You must include one of the following options: output file (-o), in-place (-i), dry run (-d)"
   exit
 # Exits if multiple output options given
 elsif [options.output, options.inplace, options.dryrun].compact.length > 1
-  puts "You cannot include more than one of the following options: output file (-o), in-place (-i), dry run (-d)"
+  raise "You cannot include more than one of the following options: output file (-o), in-place (-i), dry run (-d)"
   exit
 # Exits if dry run and quiet options given
 elsif options.quiet && options.dryrun
-  puts "Think about what you're doing."
+  raise "Think about what you're doing."
   exit
+# Checks output option
+elsif options.dryrun
+  clean.write_to_dry_run
 elsif options.output
   clean.write_to_new_file
 elsif options.inplace
   clean.write_in_place
-elsif options.dryrun
-  clean.write_to_dry_run
 end
-
-
