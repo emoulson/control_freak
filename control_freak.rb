@@ -101,6 +101,9 @@ class Cleaner
 
   def input_file
     File.open("#{@input}", "rt:utf-8")
+  rescue Errno::ENOENT => e
+    puts e.message
+    exit
   end
 
   def strip_control_characters
@@ -118,7 +121,7 @@ class Cleaner
         if char.ascii_only? and (char.ord < 32 or char.ord == 127 and char.ord != 9 and char.ord != 10 and char.ord != 13)
           # Puts line and character number to STDOUT if removed,
           # unless -q flag is present
-          $stdout.puts "Line #{line_index}, character #{char_index}:" "\\u%.4x" % char.ord unless @quiet == true
+          $stdout.puts "Line #{line_index}, character #{char_index}: " "\\u%.4x" % char.ord unless @quiet == true
         else
          str << char
         end
@@ -146,9 +149,11 @@ op = OptParse.new
 options = op.parse(ARGV)
 clean = Cleaner.new(options)
 
-
+# Exits if input and output files are the same
+if options.input == options.output
+  raise "The input file and output file should be different. Are you looking for in-place mode (-i)?"
 # Exits if no output option given
-if !(options.output || options.inplace || options.dryrun)
+elsif !(options.output || options.inplace || options.dryrun)
   raise "You must include one of the following options: output file (-o), in-place (-i), dry run (-d)"
   exit
 # Exits if multiple output options given
