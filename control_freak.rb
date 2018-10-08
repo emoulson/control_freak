@@ -1,10 +1,9 @@
 require 'optparse'
-require 'pry'
 
 # encoding: utf-8
 
 class OptParse
-  Version = '0.2'
+  Version = '0.2.5'
 
   class Options
     # Create options
@@ -60,7 +59,7 @@ class OptParse
     end
 
     def inplace_mode_option(parser)
-      parser.on("-i", "--in-place", "Writes the changes to the file, in place *(Not working at the moment)*") do
+      parser.on("-i", "--in-place", "Writes the changes to the file, in place") do
         self.inplace = true
       end
     end
@@ -100,10 +99,14 @@ class Cleaner
     self.clean_file = nil
   end
 
+  def input_file
+    File.open("#{@input}", "rt:utf-8")
+  end
+
   def strip_control_characters
     str = ''
     # Iterates through lines of the input file
-    File.open("#{@input}", "rt:utf-8").each.with_index(1) do |line, line_index|
+    input_file.each_line.with_index(1) do |line, line_index|
       # Finds escaped Unicode codepoints and interprets them as a single character
       line = line.gsub(/\\u([0-9A-F]{4})/i){$1.hex.chr(Encoding::UTF_8)}
       # Iterates through characters
@@ -121,6 +124,7 @@ class Cleaner
         end
       end
     end
+    str
   end
 
   def write_to_new_file
@@ -128,7 +132,8 @@ class Cleaner
   end
 
   def write_in_place
-    File.open(@input, "w+t:utf-8"){ |f| f.write(strip_control_characters) }
+    cleaned_file = strip_control_characters
+    File.open(@input, "w+t:utf-8"){ |f| f.write(cleaned_file) }
   end
 
   def write_to_dry_run
@@ -141,12 +146,9 @@ op = OptParse.new
 options = op.parse(ARGV)
 clean = Cleaner.new(options)
 
-# Exits if no input file given
-if options.input.nil?# && (options.output || options.inplace || options.dryrun || options.quiet)
-  raise "Please include an input file (-f, --file)"
-  exit
+
 # Exits if no output option given
-elsif options.output.nil? && options.inplace.nil? && options.dryrun.nil? && options.input
+if !(options.output || options.inplace || options.dryrun)
   raise "You must include one of the following options: output file (-o), in-place (-i), dry run (-d)"
   exit
 # Exits if multiple output options given
