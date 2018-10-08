@@ -128,6 +128,10 @@ class Cleaner
       end
     end
     str
+  # Exits on invalid encoding
+  rescue ArgumentError => e
+    puts e.message
+    exit
   end
 
   def write_to_new_file
