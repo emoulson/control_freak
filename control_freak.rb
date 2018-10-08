@@ -99,10 +99,6 @@ class Cleaner
     self.clean_file = nil
   end
 
-  # Strips ASCII characters 0-31 and 127, except:
-  # 9 (horizontal tab, \t)
-  # 10 (line feed, \n)
-  # 13 (carriage return, \r)
   def input_file
     if @dryrun || @output
       File.open("#{@input}", "r:utf-8")
@@ -113,9 +109,17 @@ class Cleaner
 
   def strip_control_characters
     str = ''
+    # Iterates through lines of the input file
     input_file.each_line.with_index(1) do |line, line_index|
+      # Finds escaped Unicode codepoints and interprets them as a single character
+      line = line.gsub(/\\u([0-9A-F]{4})/i){$1.hex.chr(Encoding::UTF_8)}
+      # Iterates through characters
       line.each_char.with_index(1) do |char, char_index|
-        if (char.ascii_only? and (char.ord < 32 or char.ord == 127 and char.ord != 9 and char.ord != 10 and char.ord != 13)) || ((/\u{0000}-\u{0008}|\u{000b}-\u{000c}|\u{000e}-\u{001f}|\u{007f}/ === char) == true)
+        # Finds ASCII characters 0-31 and 127 (ordinal), except:
+        # 9 (horizontal tab, \t)
+        # 10 (line feed, \n)
+        # 13 (carriage return, \r)
+        if char.ascii_only? and (char.ord < 32 or char.ord == 127 and char.ord != 9 and char.ord != 10 and char.ord != 13)
           # Puts line and character number to STDOUT if removed,
           # unless -q flag is present
           $stdout.puts "Line #{line_index}, character #{char_index}:" "\\u%.4x" % char.ord unless @quiet == true
