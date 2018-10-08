@@ -11,13 +11,16 @@ ASCII control characters have a habit of breaking things
 -q, --quiet                      Suppresses removed character output to the terminal
 -f, --file INPUT                 The full or relative path of the file to operate on
 -o, --output OUTPUT              The full or relative path of the output file
--i, --in-place                   Writes the changes to the file, in place *(Not working at the moment)*
+-i, --in-place                   Writes the changes to the file, in place
 -d, --dry-run                    Run a dry run of the characters to be deleted
--h, --help                       This script removes control characters from files
+-h, --help                       Show this help text
 -v, --version                    Show version
 ```
 
 It can currently only be used for text files (passing non-text files gives unexpected results).
+**This includes `.txt`, `.json`, and `.csv` files.**
+
+Output files use UTF-8 encoding.
 
 ## What gets removed?
 ASCII characters 0-31 and 127 (aka "Control Characters"), except:
@@ -35,7 +38,7 @@ Line 2, character 1:\u000b
 ```
 
 ## To-do
-- [ ] Fix `in-place` functionality
+- [x] Fix `in-place` functionality
 - [ ] Add option to retain characters
 - [ ] Add "Nothing changed" message
 - [ ] Add support for XLSX/XLSM files
