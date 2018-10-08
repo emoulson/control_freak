@@ -5,11 +5,11 @@ A simple script to view and remove troublesome ASCII control characters from tex
 ASCII control characters have a habit of breaking things
 
 ## Usage
-`ruby control_freak.rb [options]`
+`ruby control_freak.rb [input file] [options]`
 
 ```
+OPTIONS:
 -q, --quiet                      Suppresses removed character output to the terminal
--f, --file INPUT                 The full or relative path of the file to operate on
 -o, --output OUTPUT              The full or relative path of the output file
 -i, --in-place                   Writes the changes to the file, in place
 -d, --dry-run                    Run a dry run of the characters to be deleted
@@ -30,15 +30,17 @@ ASCII characters 0-31 and 127 (aka "Control Characters"), except:
 
 ## Sample
 ```
-ruby control_freak.rb -f ../lipsum.txt -o ../lipsum_fixed.txt
-Line 1, character 247:\u0003
-Line 1, character 248:\u0003
-Line 1, character 249:\u0003
-Line 2, character 1:\u000b
+ruby control_freak.rb ../lipsum.txt -o ../lipsum_fixed.txt
+Line 1, char 223: \u0003
+Line 1, char 224: \u0003
+Line 1, char 225: \u0003
+Line 2, char 1: \u000b
+Line 2, char 2: \u000b
 ```
 
 ## To-do
 - [x] Fix `in-place` functionality
+- [x] Require input file as script argument
 - [ ] Add option to retain characters
 - [ ] Add "Nothing changed" message
 - [ ] Add support for XLSX/XLSM files

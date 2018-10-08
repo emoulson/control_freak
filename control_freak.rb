@@ -3,16 +3,15 @@ require 'optparse'
 # encoding: utf-8
 
 class OptParse
-  Version = '0.2.5'
+  Version = '0.2.6'
 
   class Options
     # Create options
-    attr_accessor :quiet, :input, :output, :inplace, :dryrun
+    attr_accessor :quiet, :output, :inplace, :dryrun
 
     # Initialize options
     def initialize
       self.quiet = false
-      self.input = nil
       self.output = nil
       self.inplace = nil
       self.dryrun = nil
@@ -20,11 +19,10 @@ class OptParse
 
     def define_options(parser)
       # Help text
-      parser.banner = "Usage: ruby control_freak.rb [options]"
+      parser.banner = "Usage: ruby control_freak.rb [input file] [options]"
 
       # Other options
       quiet_mode_option(parser)
-      input_file_option(parser)
       output_file_option(parser)
       inplace_mode_option(parser)
       dry_run_mode_option(parser)
@@ -43,12 +41,6 @@ class OptParse
     def quiet_mode_option(parser)
       parser.on("-q", "--quiet", "Suppresses removed character output to the terminal") do
         self.quiet = true
-      end
-    end
-
-    def input_file_option(parser)
-      parser.on("-f", "--file INPUT", String, "The full or relative path of the input file") do |file|
-        self.input = file
       end
     end
 
@@ -76,7 +68,12 @@ class OptParse
     @options = Options.new
     @args = OptionParser.new do |parser|
       @options.define_options(parser)
-      parser.parse!(args)
+      begin
+        parser.parse!(args)
+      rescue OptionParser::InvalidOption => e
+        puts e.message
+        exit
+      end
     end
     @options
   rescue OptionParser::MissingArgument => e
@@ -91,7 +88,7 @@ class Cleaner
   attr_accessor :options, :clean_file
 
   def initialize(options)
-    @input = options.input
+    @input = ARGV[0]
     @quiet = options.quiet
     @output = options.output
     @inplace = options.inplace
@@ -121,7 +118,7 @@ class Cleaner
         if char.ascii_only? and (char.ord < 32 or char.ord == 127 and char.ord != 9 and char.ord != 10 and char.ord != 13)
           # Puts line and character number to STDOUT if removed,
           # unless -q flag is present
-          $stdout.puts "Line #{line_index}, character #{char_index}: " "\\u%.4x" % char.ord unless @quiet == true
+          $stdout.puts "Line #{line_index}, char #{char_index}: " "\\u%.4x" % char.ord unless @quiet == true
         else
          str << char
         end
@@ -153,23 +150,32 @@ op = OptParse.new
 options = op.parse(ARGV)
 clean = Cleaner.new(options)
 
-# Exits if input and output files are the same
-if options.input == options.output
-  raise "The input file and output file should be different. Are you looking for in-place mode (-i)?"
 # Exits if no output option given
-elsif !(options.output || options.inplace || options.dryrun)
-  raise "You must include one of the following options: output file (-o), in-place (-i), dry run (-d)"
-  exit
+if !(options.output || options.inplace || options.dryrun)
+  m = "You must include one of the following options: output file (-o), in-place (-i), dry run (-d)"
+# Exits if input and output files are the same
+elsif ARGV[0] == options.output
+ m = "The input file and output file should be different. Are you looking for in-place mode (-i)?"
 # Exits if multiple output options given
 elsif [options.output, options.inplace, options.dryrun].compact.length > 1
-  raise "You cannot include more than one of the following options: output file (-o), in-place (-i), dry run (-d)"
-  exit
+  m = "You cannot include more than one of the following options: output file (-o), in-place (-i), dry run (-d)"
 # Exits if dry run and quiet options given
 elsif options.quiet && options.dryrun
-  raise "Think about what you're doing."
-  exit
+  m = "Think about what you're doing."
+end
+
+# Error handler
+if m
+  begin
+    raise OptionParser::InvalidOption
+  rescue OptionParser::InvalidOption => e
+    puts e.message + m
+    exit
+  end
+end
+
 # Checks output option
-elsif options.dryrun
+if options.dryrun
   clean.write_to_dry_run
 elsif options.output
   clean.write_to_new_file
