@@ -1,4 +1,4 @@
-# control_freak
+# Control Freak
 A simple script to view and remove troublesome ASCII control characters from text files
 
 ## Why?
